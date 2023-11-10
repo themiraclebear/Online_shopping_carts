@@ -1,0 +1,40 @@
+-------Compute the average amount of product of a brand 
+create procedure [dbo].[func1] 
+@avgg int out,
+@vbrand varchar(20) ,
+@vid int
+as
+begin
+select @avgg =  AVG(amount) from product where brand = @vbrand
+update Save_to_Shopping_Cart set quantity = @avgg where pid=@vid
+end
+
+------- Increase Quantity of Items
+
+create procedure [dbo].[shoppingcart_quantity_changes]
+@userid int,
+@pid int,
+@addtime date,
+@quantity int as
+begin 
+if exists(select 1 from Save_to_Shopping_Cart where pid=@pid and userid = @userid)
+begin
+update Save_to_Shopping_Cart set quantity =0 where quantity is null
+update Save_to_Shopping_Cart set quantity =@quantity+quantity where pid=@pid and userid =@userid
+end
+else
+begin
+insert into Save_to_Shopping_Cart (userid,pid,addTime,quantity) values(@userid,@pid,@addTime,@quantity)
+end
+end
+
+-----TRIGGER 
+create trigger quantity_changes on Save_to_Shopping_Cart
+after insert,update 
+as
+begin
+insert into updateorinsert(userid,pid,timee,quantity,operation)
+select userid,pid,GETDATE(),quantity,'INS' from inserted i
+union all
+select userid,pid,GETDATE(),quantity,'DEL' from deleted d
+END
